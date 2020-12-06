@@ -36,7 +36,6 @@ def move_servo(a) -> None:
 
 
 # Callback for Channel Points Redemption pubsub from Twitch
-# Displays the UUID and content of the pubsub
 def callback_points(uuid: UUID, data: dict) -> None:
     print('\nCallback for UUID: ' + str(uuid))
     try:
@@ -58,6 +57,19 @@ def callback_points(uuid: UUID, data: dict) -> None:
         #         #     print("Input is: " + data["data"]["redemption"]["user_input"])
     except Exception as e:
         print(e)
+
+
+# Callback for Bits pubsub from Twitch
+def callback_bits(uuid: UUID, data: dict) -> None:
+    print('\nCallback for UUID: ' + str(uuid))
+    # print(str(data))
+    print("Bits message: " + data["data"]["chat_message"])
+    move_servo(60)
+    # The TTS gets run independently because runnning it here caused the runAndWait() function to enter an
+    # infinte loop. Could probably keep this all in the same file using threading.
+    os.system(f'tts.py {data["data"]["chat_message"]}')
+    move_servo(0)
+    sleep(0.1)
 
 
 # Setup the pubsub listener
@@ -133,7 +145,8 @@ twitch, user_id = pub_init()
 # Make and start the pubsub client
 pubsub = PubSub(twitch)
 pubsub.start()
-uuid = pubsub.listen_channel_points(user_id, callback_points)  # Has to start prior to running the bot in this script
+uuid_cp = pubsub.listen_channel_points(user_id, callback_points)  # Has to start prior to running the bot in this script
+uuid_b = pubsub.listen_bits(user_id, callback_bits)  # Has to start prior to running the bot in this script
 print("Listening for pubsubs!")
 
 # Run the actual bot
