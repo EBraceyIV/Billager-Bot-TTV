@@ -74,10 +74,14 @@ def callback_bits(uuid: UUID, data: dict) -> None:
 
 # Setup the pubsub listener
 def pub_init() -> tuple:
+    # APP AUTH
     # Creating our Twitch instance and doing app authentication
     twitch = Twitch(config["client_id"], config["client_secret"])
     twitch.authenticate_app([])
-    # Get auth object for defined auth scopes
+    # USER AUTH
+    # User auth seems to require being logged in to the BROADCASTING ACCOUNT in order to auth, being logged in to the
+    # bot account to authorize ends up throwing an auth error when the pubsub.listen... lines are called.
+    # Get auth object for defined auth scopes to use in user auth
     target_scope = [AuthScope.CHANNEL_READ_REDEMPTIONS, AuthScope.BITS_READ]
     auth = UserAuthenticator(twitch, target_scope, force_verify=False)
     # Get auth token and refresh token, opens a browser window on the Twitch auth page
