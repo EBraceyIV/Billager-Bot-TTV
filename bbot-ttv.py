@@ -8,15 +8,16 @@
 
 # Standard library
 import os
-from pprint import pprint
+# from pprint import pprint
 import json
 from time import sleep
-from uuid import UUID
-# TwitchAPI -> Used for receiving pubsub events from Twitch
-from twitchAPI.pubsub import PubSub
-from twitchAPI.twitch import Twitch
-from twitchAPI.types import AuthScope
-from twitchAPI.oauth import UserAuthenticator
+import pyttsx3
+# from uuid import UUID
+# # TwitchAPI -> Used for receiving pubsub events from Twitch
+# from twitchAPI.pubsub import PubSub
+# from twitchAPI.twitch import Twitch
+# from twitchAPI.types import AuthScope
+# from twitchAPI.oauth import UserAuthenticator
 # TwitchIO -> Used for the major framework of the bot functionality
 from twitchio.ext import commands
 # Pyfirmata -> Used to control the attached Arduino UNO
@@ -29,6 +30,22 @@ with open("config.JSON") as config_file:
 # Initialize the Arduino, be sure to use the correct USB address
 board = Arduino('COM4')
 board.digital[6].mode = SERVO
+
+# Start up the tts engine
+engine = pyttsx3.init()
+engine.setProperty('rate', 125)
+engine.setProperty('volume', 0.8)
+
+
+def chatter(msg) -> None:
+    move_servo(60)
+    # Run the tts and log start and stop to console
+    print("Running tts...")
+    engine.say(str(msg))
+    engine.runAndWait()
+    print("Done talking.")
+    move_servo(0)
+    sleep(0.1)
 
 
 # Function to rotate servo
@@ -145,12 +162,7 @@ class TwitchBot(commands.Bot):
         message = json.loads(data["data"]["message"])
         if message["type"] == "reward-redeemed":
             if message["data"]["redemption"]["reward"]["title"] == "Chatter":
-                move_servo(60)
-                # The TTS gets run independently because runnning it here caused the runAndWait() function to enter an
-                # infinte loop. Could probably keep this all in the same file using threading.
-                os.system(f'tts.py {message["data"]["redemption"]["user_input"]}')
-                move_servo(0)
-                sleep(0.1)
+                chatter(message["data"]["redemption"]["user_input"])
 
     # Show me those errors front and center (Not 100% if this works as intended)
     async def event_error(self, error, data=None):
