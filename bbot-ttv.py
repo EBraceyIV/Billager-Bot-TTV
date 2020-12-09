@@ -8,16 +8,10 @@
 
 # Standard library
 import os
-# from pprint import pprint
+from pprint import pprint
 import json
 from time import sleep
 import pyttsx3
-# from uuid import UUID
-# # TwitchAPI -> Used for receiving pubsub events from Twitch
-# from twitchAPI.pubsub import PubSub
-# from twitchAPI.twitch import Twitch
-# from twitchAPI.types import AuthScope
-# from twitchAPI.oauth import UserAuthenticator
 # TwitchIO -> Used for the major framework of the bot functionality
 from twitchio.ext import commands
 # Pyfirmata -> Used to control the attached Arduino UNO
@@ -27,6 +21,7 @@ from pyfirmata import SERVO
 # Load sensitive info for running the bot from a config file
 with open("config.JSON") as config_file:
     config = json.load(config_file)
+
 # Initialize the Arduino, be sure to use the correct USB address
 board = Arduino('COM4')
 board.digital[6].mode = SERVO
@@ -53,69 +48,7 @@ def move_servo(a) -> None:
     board.digital[6].write(a)
 
 
-# # Callback for Channel Points Redemption pubsub from Twitch
-# def callback_points(uuid: UUID, data: dict) -> None:
-#     print('\nCallback for UUID: ' + str(uuid))
-#     try:
-#         # Log the rewards redeemed to console
-#         reward = data["data"]["redemption"]["reward"]["title"]
-#         print("Reward redeemed: " + reward)
-#         # Make the box say the user's message
-#         if reward == "Chatter":
-#             move_servo(60)
-#             # The TTS gets run independently because runnning it here caused the runAndWait() function to enter an
-#             # infinte loop. Could probably keep this all in the same file using threading.
-#             os.system(f'tts.py {data["data"]["redemption"]["user_input"]}')
-#             move_servo(0)
-#             sleep(0.1)
-#         print("\n")
-#         #         # if "user_input" not in data["data"]["redemption"]:
-#         #         #     print("No input")
-#         #         # else:
-#         #         #     print("Input is: " + data["data"]["redemption"]["user_input"])
-#     except Exception as e:
-#         print(e)
-
-
-# Callback for Bits pubsub from Twitch
-
-# def callback_bits(uuid: UUID, data: dict) -> None:
-#     print('\nCallback for UUID: ' + str(uuid))
-#     # print(str(data))
-#     print("Bits message: " + data["data"]["chat_message"])
-#     move_servo(60)
-#     # The TTS gets run independently because runnning it here caused the runAndWait() function to enter an
-#     # infinte loop. Could probably keep this all in the same file using threading.
-#     os.system(f'tts.py {data["data"]["chat_message"]}')
-#     move_servo(0)
-#     sleep(0.1)
-
-
-# Setup the pubsub listener
-# def pub_init() -> tuple:
-#     # APP AUTH
-#     # Creating our Twitch instance and doing app authentication
-#     twitch = Twitch(config["client_id"], config["client_secret"])
-#     twitch.authenticate_app([])
-#     # USER AUTH
-#     # User auth seems to require being logged in to the BROADCASTING ACCOUNT in order to auth, being logged in to the
-#     # bot account to authorize ends up throwing an auth error when the pubsub.listen... lines are called.
-#     # Get auth object for defined auth scopes to use in user auth
-#     target_scope = [AuthScope.CHANNEL_READ_REDEMPTIONS, AuthScope.BITS_READ]
-#     auth = UserAuthenticator(twitch, target_scope, force_verify=False)
-#     # Get auth token and refresh token, opens a browser window on the Twitch auth page
-#     token, refresh_token = auth.authenticate()
-#     # Sets a token and refresh token to be used
-#     twitch.set_user_authentication(token,
-#                                    target_scope,
-#                                    refresh_token)
-#     # Gets user id for specified channel
-#     user_id = twitch.get_users(logins=['kiwi_shark'])['data'][0]['id']  # 75246492
-#     return twitch, user_id
-
-
 # Main bot class, inherited from twitchIO's commands extension
-
 class TwitchBot(commands.Bot):
     def __init__(self):
         # Sensitive information loaded from config JSON
@@ -159,10 +92,15 @@ class TwitchBot(commands.Bot):
 
     async def event_raw_pubsub(self, data):
         # The content of the pubsubs come through as JSON data, which gets converted to a dict and then sorted through
-        message = json.loads(data["data"]["message"])
-        if message["type"] == "reward-redeemed":
-            if message["data"]["redemption"]["reward"]["title"] == "Chatter":
-                chatter(message["data"]["redemption"]["user_input"])
+        if data["type"] == "PONG":
+            pass
+        elif data["type"] == "MESSAGE":
+            message = json.loads(data["data"]["message"])
+            if message["type"] == "reward-redeemed":
+                if message["data"]["redemption"]["reward"]["title"] == "Chatter":
+                    chatter(message["data"]["redemption"]["user_input"])
+        else:
+            pprint(data)
 
     # Show me those errors front and center (Not 100% if this works as intended)
     async def event_error(self, error, data=None):
@@ -174,15 +112,6 @@ class TwitchBot(commands.Bot):
         if isinstance(error, commands.CommandNotFound):
             print(f"The command {ctx.message} doesn't seem to exist.")
 
-
-# # Obtain twitch object and user id for channel
-# twitch, user_id = pub_init()
-# # Make and start the pubsub client
-# pubsub = PubSub(twitch)
-# pubsub.start()
-# uuid_cp = pubsub.listen_channel_points(user_id, callback_points)  # Has to start prior to running the bot in this script
-# uuid_b = pubsub.listen_bits(user_id, callback_bits)  # Has to start prior to running the bot in this script
-# print("Listening for pubsubs!")
 
 # Run the actual bot
 bot = TwitchBot()
