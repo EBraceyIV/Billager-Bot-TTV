@@ -91,31 +91,39 @@ class TwitchBot(commands.Bot):
         await self.handle_commands(message)
 
     async def event_raw_pubsub(self, data):
-        # The content of the pubsubs come through as JSON data, which gets converted to a dict and then sorted through
+        # Server response, just let it happen
         if data["type"] == "PONG":
             pass
+        # Handle channel point redemptions
         elif data["type"] == "MESSAGE":
+            # The content of the pubsubs come through as JSON data, convert to a dict and then sorted through
             message = json.loads(data["data"]["message"])
+            # Parse relevant info from the data received
+            user = message["data"]["redemption"]["user"]["display_name"]
+            user_input = message["data"]["redemption"]["user_input"]
+            user_input_chars = len(user_input)
+            reward = message["data"]["redemption"]["reward"]["title"]
             if message["type"] == "reward-redeemed":
-                user_input = message["data"]["redemption"]["user_input"]
-                user_input_chars = len(user_input)
-                reward = message["data"]["redemption"]["reward"]["title"]
-                if reward == "Chatter":
+                # Clatterbox messages are split up by character count for quality control / spam prevention / etc
+                # More characters require more points to redeem
+                # Users are notified if they are using too many characters for their redemption tier
+                if reward == "Clatter S":
                     if user_input_chars <= 100:
                         chatter(user_input)
                     else:
-                        await self.channel.send("That's too many characters! This tier is only for 100 characters or "
-                                                "less. You need to redeem a higher tier for that many.")
-                elif reward == "Chatter M":
+                        await self.channel.send(f"@{user}, too many characters! This tier is only for 100 characters "
+                                                "or less. You need to redeem a higher tier for that many.")
+                elif reward == "Clatter M":
                     if user_input_chars <= 250:
                         chatter(user_input)
                     else:
-                        await self.channel.send("That's too many characters! This tier is only for 250 characters or "
-                                                "less. You need to redeem a higher tier for that many.")
-                elif reward == "Chatter L":
+                        await self.channel.send(f"@{user}, too many characters! This tier is only for 250 characters "
+                                                "or less. You need to redeem a higher tier for that many.")
+                elif reward == "Clatter L":
                     chatter(user_input)
                 else:
                     pass
+        # Print other events to console for sorting through later
         else:
             pprint(data)
 
