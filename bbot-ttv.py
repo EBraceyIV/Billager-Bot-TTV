@@ -97,8 +97,25 @@ class TwitchBot(commands.Bot):
         elif data["type"] == "MESSAGE":
             message = json.loads(data["data"]["message"])
             if message["type"] == "reward-redeemed":
-                if message["data"]["redemption"]["reward"]["title"] == "Chatter":
-                    chatter(message["data"]["redemption"]["user_input"])
+                user_input = message["data"]["redemption"]["user_input"]
+                user_input_chars = len(user_input)
+                reward = message["data"]["redemption"]["reward"]["title"]
+                if reward == "Chatter":
+                    if user_input_chars <= 100:
+                        chatter(user_input)
+                    else:
+                        await self.channel.send("That's too many characters! This tier is only for 100 characters or "
+                                                "less. You need to redeem a higher tier for that many.")
+                elif reward == "Chatter M":
+                    if user_input_chars <= 250:
+                        chatter(user_input)
+                    else:
+                        await self.channel.send("That's too many characters! This tier is only for 250 characters or "
+                                                "less. You need to redeem a higher tier for that many.")
+                elif reward == "Chatter L":
+                    chatter(user_input)
+                else:
+                    pass
         else:
             pprint(data)
 
