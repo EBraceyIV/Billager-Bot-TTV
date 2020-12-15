@@ -98,12 +98,12 @@ class TwitchBot(commands.Bot):
         elif data["type"] == "MESSAGE":
             # The content of the pubsubs come through as JSON data, convert to a dict and then sorted through
             message = json.loads(data["data"]["message"])
-            # Parse relevant info from the data received
-            user = message["data"]["redemption"]["user"]["display_name"]
-            user_input = message["data"]["redemption"]["user_input"]
-            user_input_chars = len(user_input)
-            reward = message["data"]["redemption"]["reward"]["title"]
             if message["type"] == "reward-redeemed":
+                # Parse relevant info from the data received
+                user = message["data"]["redemption"]["user"]["display_name"]
+                user_input = message["data"]["redemption"]["user_input"]
+                user_input_chars = len(user_input)
+                reward = message["data"]["redemption"]["reward"]["title"]
                 # Clatterbox messages are split up by character count for quality control / spam prevention / etc
                 # More characters require more points to redeem
                 # Users are notified if they are using too many characters for their redemption tier
@@ -123,6 +123,9 @@ class TwitchBot(commands.Bot):
                     chatter(user_input)
                 else:
                     pass
+            else:
+                # Print other MESSAGE messages to console for sorting through later
+                pprint(data)
         # Print other events to console for sorting through later
         else:
             pprint(data)
