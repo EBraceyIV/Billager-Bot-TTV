@@ -8,6 +8,7 @@
 
 # Standard library
 import os
+import sys
 from pprint import pprint
 import json
 from time import sleep
@@ -23,7 +24,10 @@ with open("config.JSON") as config_file:
     config = json.load(config_file)
 
 # Initialize the Arduino, be sure to use the correct USB address
-board = Arduino('COM4')
+if sys.platform != "win32":
+    board = Arduino('/dev/ttyACM0')
+else:
+    board = Arduino('COM4')
 board.digital[6].mode = SERVO
 
 # Start up the tts engine
