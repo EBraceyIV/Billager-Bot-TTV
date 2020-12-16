@@ -8,6 +8,7 @@
 
 # Standard library
 import os
+import serial
 import sys
 from pprint import pprint
 import json
@@ -24,10 +25,14 @@ with open("config.JSON") as config_file:
     config = json.load(config_file)
 
 # Initialize the Arduino, be sure to use the correct USB address
-if sys.platform != "win32":
-    board = Arduino('/dev/ttyACM0')
-else:
-    board = Arduino('COM4')
+try:
+    if sys.platform != "win32":
+        board = Arduino('/dev/ttyACM0')
+    else:
+        board = Arduino('COM4')
+except serial.serialutil.SerialException as error:
+    print("Arduino not connected!")
+    sys.exit()
 board.digital[6].mode = SERVO
 
 # Start up the tts engine
