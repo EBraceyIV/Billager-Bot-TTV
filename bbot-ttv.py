@@ -20,6 +20,12 @@ from twitchio.ext import commands
 from pyfirmata import Arduino
 from pyfirmata import SERVO
 
+# TODO: Configure subs and bits TTS
+# TODO: Expand general usage, e.g., add more commands
+# TODO: Work on automod removal of spam messages
+#   # Example for regexing --> xcqw12345432186: W͎annͭa beco̻me ̖faͭm͖ous?̥ Buy f̧ọllowers, pr̊imes an̡d vie̷w͠ers ͫon https://clck.ru/R9gQV (bigfollows .com)!
+# TODO: Have fun (?)
+
 # Load sensitive info for running the bot from a config file
 with open("config.JSON") as config_file:
     config = json.load(config_file)
@@ -96,48 +102,66 @@ class TwitchBot(commands.Bot):
 
     # Record incoming messages to console for logging
     async def event_message(self, message):
-        print(message.author.name + ": " + message.content)
+        if message.tags is not None:
+            if "msg-id" in message.tags:
+                if message.tags["msg-id"] == "highlighted-message":
+                    print("[HIGHLIGHTED]" + " " + message.author.name + ": " + message.content)
+            else:
+                print(message.author.name + ": " + message.content)
         await self.handle_commands(message)
 
     async def event_raw_pubsub(self, data):
-        # Server response, just let it happen
-        if data["type"] == "PONG":
-            pass
-        # Handle channel point redemptions
-        elif data["type"] == "MESSAGE":
-            # The content of the pubsubs come through as JSON data, convert to a dict and then sorted through
-            message = json.loads(data["data"]["message"])
-            if message["type"] == "reward-redeemed":
-                # Parse relevant info from the data received
-                user = message["data"]["redemption"]["user"]["display_name"]
-                user_input = message["data"]["redemption"]["user_input"]
-                user_input_chars = len(user_input)
-                reward = message["data"]["redemption"]["reward"]["title"]
-                # Clatterbox messages are split up by character count for quality control / spam prevention / etc
-                # More characters require more points to redeem
-                # Users are notified if they are using too many characters for their redemption tier
-                if reward == "Clatter S":
-                    if user_input_chars <= 100:
+        try:
+            # Server response, just let it happen
+            if data["type"] == "PONG":
+                pass
+            # Handle channel point redemptions
+            elif data["type"] == "MESSAGE":
+                # The content of the pubsubs come through as JSON data, convert to a dict and then sorted through
+                message = json.loads(data["data"]["message"])
+                if message["type"] == "reward-redeemed":
+                    # Parse relevant info from the data received
+                    user = message["data"]["redemption"]["user"]["display_name"]
+                    user_input = message["data"]["redemption"]["user_input"]
+                    reward = message["data"]["redemption"]["reward"]["title"]
+                    # Clatterbox messages are split up by character count for quality control / spam prevention / etc
+                    # More characters require more points to redeem
+                    # Users are notified if they are using too many characters for their redemption tier
+                    if reward == "Clatter S":
+                        if len(user_input) <= 100:
+                            chatter(user_input)
+                        else:
+                            await self.channel.send(f"@{user}, too many characters! This tier is only for 100 characters "
+                                                    "or less. You need to redeem a higher tier for that many.")
+                    elif reward == "Clatter M":
+                        if len(user_input) <= 250:
+                            chatter(user_input)
+                        else:
+                            await self.channel.send(f"@{user}, too many characters! This tier is only for 250 characters "
+                                                    "or less. You need to redeem a higher tier for that many.")
+                    elif reward == "Clatter L":
                         chatter(user_input)
                     else:
-                        await self.channel.send(f"@{user}, too many characters! This tier is only for 100 characters "
-                                                "or less. You need to redeem a higher tier for that many.")
-                elif reward == "Clatter M":
-                    if user_input_chars <= 250:
-                        chatter(user_input)
-                    else:
-                        await self.channel.send(f"@{user}, too many characters! This tier is only for 250 characters "
-                                                "or less. You need to redeem a higher tier for that many.")
-                elif reward == "Clatter L":
-                    chatter(user_input)
+                        pass
                 else:
-                    pass
+                    # Print other MESSAGE messages to console for sorting through later
+                    pprint(data)
+            # Print other events to console for sorting through later
             else:
-                # Print other MESSAGE messages to console for sorting through later
                 pprint(data)
-        # Print other events to console for sorting through later
-        else:
+        except Exception as e:
+            print(f"Some error happened: {e}")
             pprint(data)
+
+# Bits text:
+    # Thank you for the bits {username}, they fuel my brain like gasoline.
+    # Wow, some bits. Thanks, {username}, maybe I can eat tonight.
+    #
+
+# Subs text:
+    # {username} just subscribed for the first time, what a rush pog pog
+    # {username} just subscribed for {#} months, wowowowowow
+    # {username}
 
     # Show me those errors front and center (Not 100% if this works as intended)
     async def event_error(self, error, data=None):
