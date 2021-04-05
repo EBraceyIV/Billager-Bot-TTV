@@ -8,17 +8,13 @@
 
 # Standard library
 import os
-import serial
-import sys
 from pprint import pprint
 import json
-from time import sleep
 import pyttsx3
 # TwitchIO -> Used for the major framework of the bot functionality
 from twitchio.ext import commands
-# Pyfirmata -> Used to control the attached Arduino UNO
-from pyfirmata import Arduino
-from pyfirmata import SERVO
+# GPIOZero -> Send a signal to Arduino from one of the Pi's GPIO pins
+from gpiozero import LED
 
 # TODO: Configure subs and bits TTS
 # TODO: Expand general usage, e.g., add more commands
@@ -30,37 +26,27 @@ from pyfirmata import SERVO
 with open("config.JSON") as config_file:
     config = json.load(config_file)
 
-# Initialize the Arduino, be sure to use the correct USB address
-try:
-    if sys.platform != "win32":
-        board = Arduino('/dev/ttyACM0')
-    else:
-        board = Arduino('COM4')
-except serial.serialutil.SerialException as error:
-    print("Arduino not connected!")
-    sys.exit()
-board.digital[6].mode = SERVO
-
 # Start up the tts engine
 engine = pyttsx3.init()
 engine.setProperty('rate', 125)
-engine.setProperty('volume', 0.8)
+engine.setProperty('volume', 1)
+
+# Define the TTS indicator pin
+tts_indicator = LED(4)
 
 
 def chatter(msg) -> None:
-    move_servo(60)
+    # Tell Arduino that TTS is running
+    tts_indicator.on()
+
     # Run the tts and log start and stop to console
-    print("Running tts...")
+    print("TTS: ")
     engine.say(str(msg))
     engine.runAndWait()
     print("Done talking.")
-    move_servo(0)
-    sleep(0.1)
 
-
-# Function to rotate servo
-def move_servo(a) -> None:
-    board.digital[6].write(a)
+    # Tell Arduino that TTS is off
+    tts_indicator.off()
 
 
 # Main bot class, inherited from twitchIO's commands extension
@@ -131,14 +117,16 @@ class TwitchBot(commands.Bot):
                         if len(user_input) <= 100:
                             chatter(user_input)
                         else:
-                            await self.channel.send(f"@{user}, too many characters! This tier is only for 100 characters "
-                                                    "or less. You need to redeem a higher tier for that many.")
+                            await self.channel.send(f"@{user}, too many characters! "
+                                                    f"This tier is only for 100 characters or less. "
+                                                    f"You need to redeem a higher tier for that many.")
                     elif reward == "Clatter M":
                         if len(user_input) <= 250:
                             chatter(user_input)
                         else:
-                            await self.channel.send(f"@{user}, too many characters! This tier is only for 250 characters "
-                                                    "or less. You need to redeem a higher tier for that many.")
+                            await self.channel.send(f"@{user}, too many characters! "
+                                                    f"This tier is only for 250 characters or less. "
+                                                    f"You need to redeem a higher tier for that many.")
                     elif reward == "Clatter L":
                         chatter(user_input)
                     else:
