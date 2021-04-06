@@ -135,8 +135,11 @@ class TwitchBot(commands.Bot):
                         pass
                 # Process incoming bits events
                 elif data["data"]["topic"] == "channel-bits-events-v2.75246492":
-                    user = message["data"]["user_name"]
-                    await self.channel.send(f"Thank you for the bits {user}, they fuel my brain like gasoline.")
+                    if message["data"]["is_anonymous"] == "false":
+                        user = message["data"]["user_name"]
+                        await self.channel.send(f"Thank you for the bits {user}, they fuel my brain like gasoline.")
+                    else:
+                        await self.channel.send("Thank you for those secret bits, I use them like bath bombs.")
                 # Process incoming subscription events
                 elif data["data"]["topic"] == "channel-subscribe-events-v1.75246492":
                     user = message["data"]["user_name"]
