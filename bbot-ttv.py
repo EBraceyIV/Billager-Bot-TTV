@@ -107,7 +107,7 @@ class TwitchBot(commands.Bot):
                 message = json.loads(data["data"]["message"])
                 # The type of event is described most readily in the "topic" field
                 # Process incoming channel points events
-                if message["topic"] == "channel-points-channel-v1.75246492":
+                if data["data"]["topic"] == "channel-points-channel-v1.75246492":
                     # Parse relevant info from the data received
                     user = message["data"]["redemption"]["user"]["display_name"]
                     user_input = message["data"]["redemption"]["user_input"]
@@ -134,11 +134,11 @@ class TwitchBot(commands.Bot):
                     else:
                         pass
                 # Process incoming bits events
-                elif message["topic"] == "channel-bits-events-v2.75246492":
+                elif data["data"]["topic"] == "channel-bits-events-v2.75246492":
                     user = message["data"]["user_name"]
                     await self.channel.send(f"Thank you for the bits {user}, they fuel my brain like gasoline.")
                 # Process incoming subscription events
-                elif message["topic"] == "channel-subscribe-events-v1.75246492":
+                elif data["data"]["topic"] == "channel-subscribe-events-v1.75246492":
                     user = message["data"]["user_name"]
                     await self.channel.send(f"Thanks for that spicy subscription, @{user}! I use them to fund my "
                                             f"next cybernetic enhancement.")
