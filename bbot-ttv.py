@@ -142,7 +142,7 @@ class TwitchBot(commands.Bot):
                         await self.channel.send("Thank you for those secret bits, I use them like bath bombs.")
                 # Process incoming subscription events
                 elif data["data"]["topic"] == "channel-subscribe-events-v1.75246492":
-                    user = message["data"]["user_name"]
+                    user = message["user_name"]
                     await self.channel.send(f"Thanks for that spicy subscription, @{user}! I use them to fund my "
                                             f"next cybernetic enhancement.")
                 else:
